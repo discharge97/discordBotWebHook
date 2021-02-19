@@ -1,0 +1,16 @@
+{
+  "name": "gitdoscordbot",
+  "version": "1.0.0",
+  "description": "Discord bot for github webhooks",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Aleksandr Stojadinovic",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.5.1",
+    "fs": "^0.0.1-security",
+    "http": "^0.0.1-security"
+  }
+}
