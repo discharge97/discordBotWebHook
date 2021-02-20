@@ -128,8 +128,7 @@ client.on('message', async (message) => {
 
             switch (CMD_NAME) {
                 case 'marko':
-                    message.channel.send('Polo');
-                    webhookClient.send({embeds: [exampleEmbed]});
+                    message.reply('Polo');
                     break;
 
                 case 'webhook':
