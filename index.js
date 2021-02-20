@@ -10,7 +10,7 @@ let config = {
     webhookChannelID: "",
     webhookChannelToken: "",
     prefix: "!",
-    botToken: "TOKEN",
+    botToken: "",
     server: {
         port: 8888
     }
@@ -19,32 +19,38 @@ let config = {
 const server = http.createServer(function (request, response) {
     if (request.method === 'POST') {
         let body = '';
-        request.on('github', function (data) {
+        request.on('data', function (data) {
             body += data;
         });
         request.on('end', function () {
+            response.writeHead(200, {"Content-Type": "text/plain"});
+            response.end();
             try {
                 const post = JSON.parse(body);
-                console.log(post);
                 if (post?.object_kind === 'push') {
                     const msg = exampleEmbed;
-                    const commit = post?.commits?.slice(-1);
-                    msg.author.name = post?.user_username;
-                    msg.author.icon_url = post?.user_avatar;
+                    const commit = post?.commits[0];
+                    post?.commits.forEach(el => {
+                        commit?.added.concat(el.added);
+                        commit?.modified.concat(el.modified);
+                        commit?.removed.concat(el.removed);
+                    });
+                    msg.author.name = `${post?.repository?.name}@${post?.ref.split("/").splice(-1)[0]}`;
+                    // msg.author.icon_url = post?.user_avatar;
+                    msg.thumbnail = post?.project?.avatar_url;
                     msg.author.url = post?.repository?.homepage;
-                    msg.title = post?.title;
-                    msg.description = post?.message;
+                    msg.title = commit?.title;
+                    msg.description = post.repository.url;
                     msg.url = post?.url;
-                    msg.fields[0].value = commit?.added.join("\n");
-                    msg.fields[1].value = commit?.modified.join("\n");
-                    msg.fields[2].value = commit?.removed.join("\n");
+                    msg.fields[0].value = `✅    ${commit?.added.length}`;
+                    msg.fields[1].value = `📝    ${commit?.modified.length}`;
+                    msg.fields[2].value = `❌    ${commit?.removed.length}`;
+                    msg.fields[3].value = commit?.id;
                     msg.timestamp = new Date(commit?.timestamp).toLocaleString();
-                    msg.footer.text = commit?.id;
+                    msg.footer.text = post?.user_username;
                     msg.footer.icon_url = post?.user_avatar;
                     webhookClient.send({embeds: [exampleEmbed]});
                 }
-                response.writeHead(200, {"Content-Type": "text/plain"});
-                response.end();
             } catch (err) {
                 console.error(err.message)
             }
@@ -80,27 +86,29 @@ const exampleEmbed = {
     fields: [
         {
             name: 'Added',
-            // color: 0x00b300,
             value: 'Some value here',
             inline: true,
         },
         {
             name: 'Modified',
-            // color: 0xe5fc00,
             value: 'Some value here',
             inline: true,
         },
         {
             name: 'Removed',
-            // color: 0xa70532,
             value: 'Some value here',
             inline: true,
+        },
+        {
+            name: 'Last commit ID',
+            value: '75362097562306212100',
+            inline: false,
         }
     ],
     timestamp: new Date().toLocaleString(),
     footer: {
         text: 'Some footer text here',
-        icon_url: 'https://i.imgur.com/wSTFkRM.png',
+        icon_url: 'https://i.ibb.co/9rBQftW/2021-02-19-22-52.png',
     },
 };
 
