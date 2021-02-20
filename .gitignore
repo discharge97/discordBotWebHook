@@ -1,5 +1,6 @@
 package-lock.json
-config*
+config.json
+channelNotif.json
 node_modules
 .idea
 
