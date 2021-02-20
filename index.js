@@ -128,17 +128,27 @@ client.on('message', async (message) => {
 
             switch (CMD_NAME) {
                 case 'marko':
-                    message.reply('***Polo***');
+                    message.reply('**Polo**');
+                    message.react('👀');
+                    break;
+
+                case 'yessir':
+                case 'isum':
+                    message.channel.send('https://i.ibb.co/wWjdS8N/marina-yes-sir.gif');
                     break;
 
                 case 'git':
                     if (args[0].toLocaleLowerCase() === 'add') {
                         if (!gitChannelNotif.has(args[1])) {
                             gitChannelNotif.set(args[1], message.channel.id);
+                            message.react('✅');
+                            message.reply(`**Added** tracking\n\`\`\`\nGitLab: ${args[1]}\nID: ${message.channel.id}\`\`\``);
                         }
                     } else if (args[0].toLocaleLowerCase() === 'rm' || args[0].toLocaleLowerCase() === 'remove') {
                         if (gitChannelNotif.has(args[1])) {
                             gitChannelNotif.delete(args[1]);
+                            message.react('❌');
+                            message.reply(`**Removed** tracking for ***${args[1]}***❗`);
                         }
                     }
                     writeConfig();
@@ -146,9 +156,10 @@ client.on('message', async (message) => {
 
                 case 'test':
                     if (gitChannelNotif.has(args[0])) {
-                        client.channels.cache.get(gitChannelNotif.get(args[0])).send("Works!!!");
+                        client.channels.cache.get(gitChannelNotif.get(args[0])).send("Channel is setup and is working❗");
                     } else {
-                        message.reply("**Rip**");
+                        message.react('😢');
+                        message.reply(`**Rip** ${args[0]} channel isn't setup❗`);
                     }
                     break;
 
@@ -156,7 +167,7 @@ client.on('message', async (message) => {
                     if (args.length > 0) {
                         config.prefix = args[0];
                     } else {
-                        message.reply(`Prefix is not provided. Please use \`${config.prefix}prefix (char)\``);
+                        message.reply(`Prefix is not provided. Please use \`${config.prefix}prefix (string)\``);
                     }
                     break;
 
