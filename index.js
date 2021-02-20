@@ -16,6 +16,8 @@ let config = {
     }
 }
 
+let gitChannelNotif = new Map();
+
 const server = http.createServer(function (request, response) {
     if (request.method === 'POST') {
         let body = '';
@@ -27,7 +29,11 @@ const server = http.createServer(function (request, response) {
             response.end();
             try {
                 const post = JSON.parse(body);
-                if (post?.object_kind === 'push') {
+
+                if (post?.object_kind === 'push' &&
+                    (gitChannelNotif.has(post?.repository?.git_ssh_url)
+                        || gitChannelNotif.has(post?.repository?.git_http_url))) {
+
                     const msg = exampleEmbed;
                     const commit = post?.commits[0];
                     post?.commits.forEach(el => {
@@ -36,7 +42,6 @@ const server = http.createServer(function (request, response) {
                         commit?.removed.concat(el.removed);
                     });
                     msg.author.name = `${post?.repository?.name}@${post?.ref.split("/").splice(-1)[0]}`;
-                    // msg.author.icon_url = post?.user_avatar;
                     msg.thumbnail = post?.project?.avatar_url;
                     msg.author.url = post?.repository?.homepage;
                     msg.title = commit?.title;
@@ -49,7 +54,8 @@ const server = http.createServer(function (request, response) {
                     msg.timestamp = new Date(commit?.timestamp).toLocaleString();
                     msg.footer.text = post?.user_username;
                     msg.footer.icon_url = post?.user_avatar;
-                    webhookClient.send({embeds: [exampleEmbed]});
+                    const channel = gitChannelNotif.get(post?.repository?.git_ssh_url) || gitChannelNotif.get(post?.repository?.git_http_url);
+                    client.channels.cache.get(channel).send({embeds: [commit]});
                 }
             } catch (err) {
                 console.error(err.message)
@@ -63,12 +69,6 @@ if (fs.existsSync("config.json")) {
 } else {
     writeConfig();
 }
-
-const webhookClient = new WebhookClient(
-    config.webhookChannelID,
-    config.webhookChannelToken,
-);
-
 
 const exampleEmbed = {
     color: 0xa70532,
@@ -128,24 +128,27 @@ client.on('message', async (message) => {
 
             switch (CMD_NAME) {
                 case 'marko':
-                    message.reply('Polo');
+                    message.reply('***Polo***');
                     break;
 
-                case 'webhook':
-                    if (args[0].toLowerCase() === 'channel') {
-                        if (args[1].toLowerCase() === 'id') {
-                            config.webhookChannelID = args[2];
-                            writeConfig();
-                        } else if (args[1].toLowerCase() === 'token') {
-                            config.webhookChannelToken = args[2];
-                            writeConfig();
+                case 'git':
+                    if (args[0].toLocaleLowerCase() === 'add') {
+                        if (!gitChannelNotif.has(args[1])) {
+                            gitChannelNotif.set(args[1], message.channel.id);
                         }
-                    } else if (args[0].toLowerCase() === 'url') {
-                        const parts = args[1].split('/').slice(-2);
-                        config.webhookChannelID = parts[0];
-                        config.webhookChannelToken = parts[1];
-                        writeConfig();
-                        message.reply(`**Channel updated:**\n\`\`\`ID: ${config.webhookChannelID}\nToken: ${config.webhookChannelToken}\`\`\``);
+                    } else if (args[0].toLocaleLowerCase() === 'rm' || args[0].toLocaleLowerCase() === 'remove') {
+                        if (gitChannelNotif.has(args[1])) {
+                            gitChannelNotif.delete(args[1]);
+                        }
+                    }
+                    writeConfig();
+                    break;
+
+                case 'test':
+                    if (gitChannelNotif.has(args[0])) {
+                        client.channels.cache.get(gitChannelNotif.get(args[0])).send("Works!!!");
+                    } else {
+                        message.reply("**Rip**");
                     }
                     break;
 
@@ -156,6 +159,10 @@ client.on('message', async (message) => {
                         message.reply(`Prefix is not provided. Please use \`${config.prefix}prefix (char)\``);
                     }
                     break;
+
+                default:
+                    message.reply(`Unknown command❗❓`);
+                    break;
             }
         }
     } catch (err) {
@@ -164,11 +171,23 @@ client.on('message', async (message) => {
 });
 
 function writeConfig() {
-    fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
+    try {
+        fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
+        fs.writeFileSync('channelNotif.json', JSON.stringify(Array.from(gitChannelNotif.entries()), null, 2));
+
+    } catch (err) {
+        console.error(err.message);
+    }
+
 }
 
 function updateConfig() {
-    config = JSON.parse(fs.readFileSync('config.json'));
+    try {
+        config = JSON.parse(fs.readFileSync('config.json'));
+        gitChannelNotif = new Map(JSON.parse(fs.readFileSync('channelNotif.json')));
+    } catch (err) {
+        console.error(err.message);
+    }
 }
 
 // client.on('messageReactionAdd', (reaction, user) => {
