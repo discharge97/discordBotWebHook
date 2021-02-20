@@ -29,7 +29,6 @@ const server = http.createServer(function (request, response) {
             response.end();
             try {
                 const post = JSON.parse(body);
-
                 if (post?.object_kind === 'push' &&
                     (gitChannelNotif.has(post?.repository?.git_ssh_url)
                         || gitChannelNotif.has(post?.repository?.git_http_url))) {
@@ -55,7 +54,7 @@ const server = http.createServer(function (request, response) {
                     msg.footer.text = post?.user_username;
                     msg.footer.icon_url = post?.user_avatar;
                     const channel = gitChannelNotif.get(post?.repository?.git_ssh_url) || gitChannelNotif.get(post?.repository?.git_http_url);
-                    client.channels.cache.get(channel).send({embeds: [commit]});
+                    client.channels.cache.get(channel).send({embed: msg});
                 }
             } catch (err) {
                 console.error(err.message)
