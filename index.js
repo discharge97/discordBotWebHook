@@ -183,9 +183,9 @@ client.on('message', async (message) => {
                         break;
                     } else {
                         switch (args[0]) {
-                            case 'res':
+                            case 'res':case 'restaurant':
                                 client.channels.cache.get(config.foodChannelID).send(`
-                                >>> 📅  *${new Date().toLocaleDateString()}*\n\n🍔 Naručuje se iz: **${args.join(" ").replace("res ", "")}**\n_ _`);
+                                >>> 📅  *${new Date().toLocaleDateString()}*\n\n🍔 Naručuje se iz: **${args.splice(0,1).join(" ")}**\n_ _`);
 
                                 client.channels.cache.get(config.generalChannelID).send(`>>> @everyone\n🍕 Jedemo u **${args[1]}**
                                 \n*napišite i cenu na kraju porudžbine kako bi smo lakse izračunali ukupnu cenu*
@@ -194,7 +194,7 @@ client.on('message', async (message) => {
 
                             case 'add':
                                 message.react('✅');
-                                client.channels.cache.get(config.foodChannelID).send(`> **${message.author.username}**: *${args.join(" ").replace("add ", "")}*`);
+                                client.channels.cache.get(config.foodChannelID).send(`> **${message.author.username}**: *${args.splice(0,1).join(" ")}*`);
                                 break;
                         }
                     }
