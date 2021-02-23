@@ -1,16 +1,17 @@
-const {Client, WebhookClient} = require('discord.js');
+const {Client} = require('discord.js');
 const fs = require('fs');
 const http = require('http');
 
 const client = new Client({
-    partials: ['MESSAGE', 'REACTION']
+    partials: ['MESSAGE', 'REACTION'],
+    disableMentions: "none"
 });
 
 let config = {
-    webhookChannelID: "",
-    webhookChannelToken: "",
     prefix: "!",
     botToken: "",
+    foodChannelID: "",
+    generalChannelID: "",
     server: {
         port: 8888
     }
@@ -50,7 +51,6 @@ const server = http.createServer(function (request, response) {
                     msg.fields[1].value = `📝    ${commit?.modified.length}`;
                     msg.fields[2].value = `❌    ${commit?.removed.length}`;
                     msg.fields[3].value = commit?.id;
-                    msg.timestamp = new Date(commit?.timestamp).toLocaleString();
                     msg.footer.text = post?.user_username;
                     msg.footer.icon_url = post?.user_avatar;
                     const channel = gitChannelNotif.get(post?.repository?.git_ssh_url) || gitChannelNotif.get(post?.repository?.git_http_url);
@@ -146,7 +146,7 @@ client.on('message', async (message) => {
                     } else if (args[0].toLocaleLowerCase() === 'rm' || args[0].toLocaleLowerCase() === 'remove') {
                         if (gitChannelNotif.has(args[1])) {
                             gitChannelNotif.delete(args[1]);
-                            message.react('❌');
+                            message.react('✅');
                             message.reply(`**Removed** tracking for ***${args[1]}***❗`);
                         }
                     }
@@ -162,6 +162,11 @@ client.on('message', async (message) => {
                     }
                     break;
 
+                case 'general':
+                    config.generalChannelID = message.channel.id;
+                    writeConfig();
+                    break;
+
                 case 'prefix':
                     if (args.length > 0) {
                         config.prefix = args[0];
@@ -170,8 +175,34 @@ client.on('message', async (message) => {
                     }
                     break;
 
+                case 'food':
+                    if (args[0] === 'setup') {
+                        message.react('✅');
+                        config.foodChannelID = message.channel.id;
+                        writeConfig();
+                        break;
+                    } else {
+                        switch (args[0]) {
+                            case 'res':
+                                client.channels.cache.get(config.foodChannelID).send(`
+                                >>> 📅  *${new Date().toLocaleDateString()}*\n\n🍔 Naručuje se iz: **${args.join(" ").replace("res ", "")}**\n_ _`);
+
+                                client.channels.cache.get(config.generalChannelID).send(`>>> @everyone\n🍕 Jedemo u **${args[1]}**
+                                \n*napišite i cenu na kraju porudžbine kako bi smo lakse izračunali ukupnu cenu*
+                                \n🍔 Za naručivanje kucajte:\n***!food add (ime hrane)***`);
+                                break;
+
+                            case 'add':
+                                message.react('✅');
+                                client.channels.cache.get(config.foodChannelID).send(`> **${message.author.username}**: *${args.join(" ").replace("add ", "")}*`);
+                                break;
+                        }
+                    }
+                    break;
+
                 default:
-                    message.reply(`Unknown command❗❓`);
+                    message.react('❌');
+                    message.reply(`Unknown command⁉`);
                     break;
             }
         }
